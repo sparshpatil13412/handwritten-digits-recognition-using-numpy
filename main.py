@@ -26,8 +26,8 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_st
 
 X_train = np.array(X_train).T
 X_val = np.array(X_val).T
-y_train = np.array(y_train).T
-y_val = np.array(y_val).T
+y_train = np.eye(10)[y_train].T
+y_val = np.eye(10)[y_val].T
 
 print("X train shape:", X_train.shape)
 print("X validation shape:", X_val.shape)
@@ -44,38 +44,40 @@ def tanh(z):
     return A
 
 def softmax(Z):
-    A = np.exp(Z) / np.sum(np.exp(Z), axis=0, keepdims=True)
-    return A
+    Z = Z - np.max(Z, axis=0, keepdims=True)
+    A = np.exp(Z)
+    return A / np.sum(A, axis=0, keepdims=True)
 
 #creating loss function
 def loss(y, y_hat):
-    cost = np.sum(y * np.log(y_hat))
+    m = y.shape[1]
+    cost = -(1 / m) * np.sum(y * np.log(y_hat + 1e-8))
     return cost
 
-#creaing the model
+#creating the model class
 class DigitClassifier():
     def __init__(self, X, y, layer1, layer2, learning_rate, epochs):
-        self.W1 = np.random.randn(784, layer1) * 0.01
-        self.b1 = np.zeros((1, layer1))
-        self.W2 = np.random.randn(layer1, layer2) * 0.01
-        self.b2 = np.zeros((1, layer2))
-        self.W3 = np.random.randn(layer2, 10) * 0.01
-        self.b3 = np.zeros((1, 10))
+        self.W1 = np.random.randn(784, layer1) * np.sqrt(2 / 784)
+        self.b1 = np.zeros((layer1, 1 ))
+        self.W2 = np.random.randn(layer1, layer2) * np.sqrt(2 / layer1)
+        self.b2 = np.zeros((layer2, 1))
+        self.W3 = np.random.randn(layer2, 10) * np.sqrt(2 / layer2)
+        self.b3 = np.zeros((10, 1))
         self.lr = learning_rate
         self.X = X
         self.y = y
         self.epochs = epochs
-        self.m = X.shape[0]
+        self.m = X.shape[1]
         self.costs = []
     
     def forward(self):
-        self.Z1 = np.dot(self.W1, self.X) + self.b1
+        self.Z1 = np.dot(self.W1.T, self.X) + self.b1
         self.A1 = ReLU(self.Z1)
 
-        self.Z2 = np.dot(self.W2, self.A1) + self.b2
+        self.Z2 = np.dot(self.W2.T, self.A1) + self.b2
         self.A2 = tanh(self.Z2)
 
-        self.Z3 = np.dot(self.W3, self.A2) + self.b3
+        self.Z3 = np.dot(self.W3.T, self.A2) + self.b3
         self.A3 = softmax(self.Z3)
 
         cost = loss(self.y, self.A3)
@@ -84,18 +86,18 @@ class DigitClassifier():
 
     def backward(self):
         self.dZ3 = self.A3 - self.y
-        self.dW3 = (1 / self.m) * np.dot(self.dZ3, self.A2.T)
+        self.dW3 = (1 / self.m) * np.dot(self.A2, self.dZ3.T)
         self.db3 = (1 / self.m) * np.sum(self.dZ3, axis=1, keepdims=True)
 
-        self.dA2 = np.dot(self.W3.T, self.dZ3)
+        self.dA2 = np.dot(self.W3, self.dZ3)
         self.dZ2 = self.dA2 * (1 - self.A2 ** 2)
-        self.dW2 = (1 / self.m) * np.dot(self.dZ2, self.A1.T)
-        self.db2 = (1 / self.m) * np.sum(self.dZ2)
+        self.dW2 = (1 / self.m) * np.dot(self.A1, self.dZ2.T)
+        self.db2 = (1 / self.m) * np.sum(self.dZ2, axis=1, keepdims=True)
 
-        self.dA1 = np.dot(self.W2.T, self.dZ2)
+        self.dA1 = np.dot(self.W2, self.dZ2)
         self.dZ1 = self.dA1 * (self.Z1 > 0)
-        self.dW1 = (1 / self.m) * np.dot(self.dZ1, self.X.T)
-        self.db1 = (1 / self.m) * np.sum(self.dZ1)
+        self.dW1 = (1 / self.m) * np.dot(self.X, self.dZ1.T)
+        self.db1 = (1 / self.m) * np.sum(self.dZ1, axis=1, keepdims=True)
 
     def descent(self):
         self.W3 -= self.lr * self.dW3
@@ -106,7 +108,7 @@ class DigitClassifier():
         self.b1 -= self.lr * self.db1
 
     def train(self):
-        for epoch in range(self.epochs):
+        for epoch in range(1, self.epochs + 1):
             cost = self.forward()
             self.costs.append(cost)
             self.backward()
@@ -121,22 +123,34 @@ class DigitClassifier():
         plt.title(f"Cost vs. Epochs ({self.epochs} Epochs)", fontsize=14)
         plt.xlabel("Epochs", fontsize=12)
         plt.ylabel("Cost", fontsize=12)
-        plt.xlim(1, self.epochs)
+        plt.xlim(0, self.epochs)
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.legend()
         plt.tight_layout()
         plt.show()
 
     def predict(self, X):
-        Z1 = np.dot(self.W1, X) + self.b1
+        Z1 = np.dot(self.W1.T, X) + self.b1
         A1 = ReLU(Z1)
 
-        Z2 = np.dot(self.W2, A1) + self.b2
-        A2 = ReLU(Z2)
+        Z2 = np.dot(self.W2.T, A1) + self.b2
+        A2 = tanh(Z2)
 
-        Z3 = np.dot(self.W3, A2) + self.b3
+        Z3 = np.dot(self.W3.T, A2) + self.b3
         A3 = softmax(Z3)
 
         confidence = A3
         predictions = np.argmax(A3, axis=0)
         return confidence, predictions
+
+
+#defining the model
+layer1 = 196
+layer2 = 32
+learning_rate = 0.001
+epochs = 20
+model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs)
+
+#training the model, visualizing cost and recording the validation accuracy
+model.train()
+model.visualize()
