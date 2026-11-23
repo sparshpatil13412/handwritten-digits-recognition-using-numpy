@@ -115,8 +115,8 @@ class DigitClassifier():
             self.backward()
             self.descent()
 
-            if epoch % 10 == 0:
-                print(f"Epoch {epoch}, Cost: {cost}")
+            if epoch == 1 or epoch % 10 == 0:
+                print(f"Epoch {epoch} / {self.epochs}, Cost: {cost :.4f}")
     
     def visualize(self):
         plt.figure(figsize=(8, 5))
@@ -140,7 +140,7 @@ class DigitClassifier():
         Z3 = np.dot(self.W3.T, A2) + self.b3
         A3 = softmax(Z3)
 
-        confidence = A3
+        confidence = A3.reshape(A3.shape[0])
         prediction = np.argmax(A3, axis=0)
         return confidence, prediction
 
@@ -149,7 +149,7 @@ class DigitClassifier():
 layer1 = 196
 layer2 = 32
 learning_rate = 0.01
-epochs = 300
+epochs = 500
 model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs)
 
 #training the model, visualizing cost and recording the train and validation accuracy
@@ -191,9 +191,15 @@ image1 = Image.open("image1.png").convert("L")  # Convert to grayscale
 image2 = Image.open("image2.png").convert("L")  # Convert to grayscale
 image3 = Image.open("image3.png").convert("L")  # Convert to grayscale
 
-image1 = np.array(image1)
-image2 = np.array(image2)
-image3 = np.array(image3)
+def resize_and_convert_into_array(image):
+    image = image.resize((28, 28))
+    image = np.array(image)
+    image = image.reshape(784, 1)
+    return image
+
+image1 = resize_and_convert_into_array(image1)
+image2 = resize_and_convert_into_array(image2)
+image3 = resize_and_convert_into_array(image3)
 
 confidence1, prediction1 = model.predict(image1)
 print(f"The model has predicted {prediction1} for image 1 with confidence\n {confidence1}")
