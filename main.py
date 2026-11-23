@@ -147,10 +147,25 @@ class DigitClassifier():
 #defining the model
 layer1 = 196
 layer2 = 32
-learning_rate = 0.001
-epochs = 20
+learning_rate = 0.1
+epochs = 300
 model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs)
 
 #training the model, visualizing cost and recording the validation accuracy
 model.train()
 model.visualize()
+
+correct = 0
+total = X_val.shape[0]
+for i in range(total):
+    X_sample = X_val[:, i].reshape(784, 1)
+
+    confidence, prediction = model.predict(X_sample)
+
+    actual = np.argmax(y_val[:, i])
+
+    if prediction[0] == actual:
+        correct += 1
+
+accuracy = (correct / total) * 100
+print(f"Validation accuracy is {accuracy}%")
