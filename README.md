@@ -12,8 +12,9 @@ The goal is to understand the underlying mechanics of neural networks, from proc
 
 **MNIST (Modified National Institute of Standards and Technology)**
 
-- Total images: 70,000
-- Training images: 60,000
+- Total images: 52,000
+- Training images: 33,600
+- Validation images: 8,400
 - Testing images: 10,000
 - Image dimensions: 28 × 28 pixels
 - Input features: 784 pixel values
@@ -29,8 +30,7 @@ The network uses a fully connected feedforward architecture:
 ```text
 Input Layer:    784 neurons
 Hidden Layer 1: 196 neurons
-Hidden Layer 2: 98 neurons
-Hidden Layer 3: 32 neurons
+Hidden Layer 2: 32 neurons
 Output Layer:   10 neurons
 ```
 
@@ -91,8 +91,8 @@ python main.py
 
 ## Acknowledgements
 
-Dataset: [MNIST Database](http://yann.lecun.com/exdb/mnist/)
+**Dataset**: 
+The dataset was taken from the kaggle competition on handwritten digits recognition.
+The test dataset did not have the labels so test.csv was not used for this project.
 
----
-
-**Status:** In Development
+Dataset available at:[MNIST](https://www.kaggle.com/competitions/digit-recognizer/data)

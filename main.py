@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from PIL import Image
 
 #setting random seed
 np.random.seed(42)
@@ -140,20 +141,35 @@ class DigitClassifier():
         A3 = softmax(Z3)
 
         confidence = A3
-        predictions = np.argmax(A3, axis=0)
-        return confidence, predictions
+        prediction = np.argmax(A3, axis=0)
+        return confidence, prediction
 
 
 #defining the model
 layer1 = 196
 layer2 = 32
-learning_rate = 0.1
+learning_rate = 0.01
 epochs = 300
 model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs)
 
-#training the model, visualizing cost and recording the validation accuracy
+#training the model, visualizing cost and recording the train and validation accuracy
 model.train()
 model.visualize()
+
+correct = 0
+total = X_train.shape[0]
+for i in range(total):
+    X_sample = X_train[:, i].reshape(784, 1)
+
+    confidence, prediction = model.predict(X_sample)
+
+    actual = np.argmax(y_train[:, i])
+
+    if prediction[0] == actual:
+        correct += 1
+
+accuracy = (correct / total) * 100
+print(f"Train accuracy is {accuracy :.0f}%")
 
 correct = 0
 total = X_val.shape[0]
@@ -168,4 +184,20 @@ for i in range(total):
         correct += 1
 
 accuracy = (correct / total) * 100
-print(f"Validation accuracy is {accuracy}%")
+print(f"Validation accuracy is {accuracy :.0f}%")
+
+#Predicting on test examples
+image1 = Image.open("image1.png").convert("L")  # Convert to grayscale
+image2 = Image.open("image2.png").convert("L")  # Convert to grayscale
+image3 = Image.open("image3.png").convert("L")  # Convert to grayscale
+
+image1 = np.array(image1)
+image2 = np.array(image2)
+image3 = np.array(image3)
+
+confidence1, prediction1 = model.predict(image1)
+print(f"The model has predicted {prediction1} for image 1 with confidence\n {confidence1}")
+confidence2, prediction2 = model.predict(image2)
+print(f"The model has predicted {prediction2} for image 1 with confidence\n {confidence2}")
+confidence3, prediction3 = model.predict(image3)
+print(f"The model has predicted {prediction3} for image 1 with confidence\n {confidence3}")
