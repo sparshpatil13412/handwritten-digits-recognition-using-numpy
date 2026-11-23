@@ -57,22 +57,22 @@ def loss(y, y_hat):
 
 #creating the model class
 class DigitClassifier():
-    def __init__(self, X, y, layer1, layer2, learning_rate, epochs):
+    def __init__(self, X, y, layer1, layer2, learning_rate, epochs, batch_size):
         self.W1 = np.random.randn(784, layer1) * np.sqrt(2 / 784)
         self.b1 = np.zeros((layer1, 1 ))
-        self.W2 = np.random.randn(layer1, layer2) * np.sqrt(2 / layer1)
+        self.W2 = np.random.randn(layer1, layer2) * np.sqrt(2 / (layer1 + layer2))
         self.b2 = np.zeros((layer2, 1))
         self.W3 = np.random.randn(layer2, 10) * np.sqrt(2 / layer2)
         self.b3 = np.zeros((10, 1))
-        self.lr = learning_rate
         self.X = X
         self.y = y
+        self.lr = learning_rate
         self.epochs = epochs
-        self.m = X.shape[1]
         self.costs = []
+        self.batch_size = batch_size
     
-    def forward(self):
-        self.Z1 = np.dot(self.W1.T, self.X) + self.b1
+    def forward(self, X, y):
+        self.Z1 = np.dot(self.W1.T, X) + self.b1
         self.A1 = ReLU(self.Z1)
 
         self.Z2 = np.dot(self.W2.T, self.A1) + self.b2
@@ -81,24 +81,25 @@ class DigitClassifier():
         self.Z3 = np.dot(self.W3.T, self.A2) + self.b3
         self.A3 = softmax(self.Z3)
 
-        cost = loss(self.y, self.A3)
+        cost = loss(y, self.A3)
 
         return cost
 
-    def backward(self):
-        self.dZ3 = self.A3 - self.y
-        self.dW3 = (1 / self.m) * np.dot(self.A2, self.dZ3.T)
-        self.db3 = (1 / self.m) * np.sum(self.dZ3, axis=1, keepdims=True)
+    def backward(self, X, y):
+        m = X.shape[1]
+        self.dZ3 = self.A3 - y
+        self.dW3 = (1 / m) * np.dot(self.A2, self.dZ3.T)
+        self.db3 = (1 / m) * np.sum(self.dZ3, axis=1, keepdims=True)
 
         self.dA2 = np.dot(self.W3, self.dZ3)
         self.dZ2 = self.dA2 * (1 - self.A2 ** 2)
-        self.dW2 = (1 / self.m) * np.dot(self.A1, self.dZ2.T)
-        self.db2 = (1 / self.m) * np.sum(self.dZ2, axis=1, keepdims=True)
+        self.dW2 = (1 / m) * np.dot(self.A1, self.dZ2.T)
+        self.db2 = (1 / m) * np.sum(self.dZ2, axis=1, keepdims=True)
 
         self.dA1 = np.dot(self.W2, self.dZ2)
         self.dZ1 = self.dA1 * (self.Z1 > 0)
-        self.dW1 = (1 / self.m) * np.dot(self.X, self.dZ1.T)
-        self.db1 = (1 / self.m) * np.sum(self.dZ1, axis=1, keepdims=True)
+        self.dW1 = (1 / m) * np.dot(X, self.dZ1.T)
+        self.db1 = (1 / m) * np.sum(self.dZ1, axis=1, keepdims=True)
 
     def descent(self):
         self.W3 -= self.lr * self.dW3
@@ -110,13 +111,24 @@ class DigitClassifier():
 
     def train(self):
         for epoch in range(1, self.epochs + 1):
-            cost = self.forward()
-            self.costs.append(cost)
-            self.backward()
-            self.descent()
+            #apply mini-batch sgd
+            indices = np.random.permutation(len(self.X))
+            X_shuffled = self.X[:, indices]
+            y_shuffled = self.y[:, indices]
+            epoch_cost = 0
+            for start in range(0, len(self.X), self.batch_size):
+                end = start + self.batch_size
+                X_batch = X_shuffled[:, start:end]
+                y_batch = y_shuffled[:, start:end]
+                cost = self.forward(X_batch, y_batch)
+                epoch_cost += cost * X_batch.shape[1]
+                self.backward(X_batch, y_batch)
+                self.descent()
 
+            epoch_cost /= X.shape[1]
+            self.costs.append(epoch_cost)
             if epoch == 1 or epoch % 10 == 0:
-                print(f"Epoch {epoch} / {self.epochs}, Cost: {cost :.4f}")
+                print(f"Epoch {epoch} / {self.epochs}, Cost: {epoch_cost :.4f}")
     
     def visualize(self):
         plt.figure(figsize=(8, 5))
@@ -144,13 +156,13 @@ class DigitClassifier():
         prediction = np.argmax(A3, axis=0)
         return confidence, prediction
 
-
 #defining the model
 layer1 = 196
 layer2 = 32
-learning_rate = 0.01
-epochs = 500
-model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs)
+learning_rate = 0.005
+epochs = 150
+batch_size = 32
+model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs, batch_size)
 
 #training the model, visualizing cost and recording the train and validation accuracy
 model.train()
@@ -204,6 +216,6 @@ image3 = resize_and_convert_into_array(image3)
 confidence1, prediction1 = model.predict(image1)
 print(f"The model has predicted {prediction1} for image 1 with confidence\n {confidence1}")
 confidence2, prediction2 = model.predict(image2)
-print(f"The model has predicted {prediction2} for image 1 with confidence\n {confidence2}")
+print(f"The model has predicted {prediction2} for image 2 with confidence\n {confidence2}")
 confidence3, prediction3 = model.predict(image3)
-print(f"The model has predicted {prediction3} for image 1 with confidence\n {confidence3}")
+print(f"The model has predicted {prediction3} for image 3 with confidence\n {confidence3}")
