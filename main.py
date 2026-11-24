@@ -159,8 +159,8 @@ class DigitClassifier():
 #defining the model
 layer1 = 196
 layer2 = 32
-learning_rate = 0.005
-epochs = 150
+learning_rate = 0.001
+epochs = 300
 batch_size = 32
 model = DigitClassifier(X_train, y_train, layer1, layer2, learning_rate, epochs, batch_size)
 
@@ -205,6 +205,7 @@ image3 = Image.open("image3.png").convert("L")  # Convert to grayscale
 
 def resize_and_convert_into_array(image):
     image = image.resize((28, 28))
+    image.show()
     image = np.array(image)
     image = image.reshape(784, 1)
     return image
@@ -214,8 +215,8 @@ image2 = resize_and_convert_into_array(image2)
 image3 = resize_and_convert_into_array(image3)
 
 confidence1, prediction1 = model.predict(image1)
-print(f"The model has predicted {prediction1} for image 1 with confidence\n {confidence1}")
+print(f"The model has predicted {prediction1} for image 1 with confidence {np.max(confidence1 * 100) :.0f}%")
 confidence2, prediction2 = model.predict(image2)
-print(f"The model has predicted {prediction2} for image 2 with confidence\n {confidence2}")
+print(f"The model has predicted {prediction2} for image 2 with confidence {np.max(confidence2 * 100) :.0f}%")
 confidence3, prediction3 = model.predict(image3)
-print(f"The model has predicted {prediction3} for image 3 with confidence\n {confidence3}")
+print(f"The model has predicted {prediction3} for image 3 with confidence {np.max(confidence3 * 100) :.0f}%")
